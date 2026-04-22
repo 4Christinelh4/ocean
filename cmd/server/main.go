@@ -26,6 +26,19 @@ func getDesk(ctx context.Context) (*desk.Desk, error) {
 	return desktop, initErr
 }
 
+// main starts the HTTP server for the Ocean desk API, registers handlers for
+// /api/health, /api/init and /api/chat, and applies simple CORS middleware.
+//
+// /api/health responds with a JSON heartbeat {"ok":true}.
+// /api/init accepts POST, initializes or retrieves the singleton desk, logs session
+// and remote info, and returns {"sessionId": "<id>"} on success.
+// /api/chat accepts POST JSON with fields `type`, `command`, and `input`, validates
+// them, and streams managedagent events to the client using Server-Sent Events
+// semantics (Content-Type: text/event-stream). It emits a final event of type
+// "ocean.done" when the chat completes.
+//
+// The server listens on the address from the OCEAN_HTTP_ADDR environment variable
+// or defaults to :8080.
 func main() {
 	addr := os.Getenv("OCEAN_HTTP_ADDR")
 	if addr == "" {

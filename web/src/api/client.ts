@@ -17,7 +17,18 @@ export async function initSession(): Promise<{ sessionId: string }> {
   return res.json() as Promise<{ sessionId: string }>;
 }
 
-/** POST /api/chat — response is SSE: each `data: ` line is JSON (Anthropic event or `{type:ocean.done}`). */
+/**
+ * Streams chat events from the server endpoint `/api/chat` and calls `onEvent` for each parsed event.
+ *
+ * Sends a JSON POST containing `type`, `command`, and `input`. Processes the response as an SSE-style stream where each `data:` line is parsed as JSON and delivered to `onEvent`. Streaming stops early if an event with `type === "ocean.done"` is received.
+ *
+ * @param type - Message category or processing mode sent to the API
+ * @param command - Command or instruction included with the request payload
+ * @param input - User-provided input text for the chat request
+ * @param onEvent - Callback invoked for each parsed `StreamEvent` received from the stream
+ *
+ * @throws Error if the HTTP response is not OK or the response body is missing
+ */
 export async function chatStream(
   type: string,
   command: string,

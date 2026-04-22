@@ -19,6 +19,14 @@ function formatAgentEvent(ev: StreamEvent): string {
   return JSON.stringify(ev);
 }
 
+/**
+ * Root React component for the Ocean OS desktop UI.
+ *
+ * Manages session initialization, window state (Terminal, Browser, Trash), z-order and focus,
+ * agent interactions (streams responses into window logs), and the global busy/ready/error state.
+ *
+ * @returns The root React element for the Ocean OS desktop application.
+ */
 export default function App() {
   const apiBase = getAPIBaseLabel();
   const [ready, setReady] = useState(false);

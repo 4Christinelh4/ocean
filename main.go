@@ -14,6 +14,15 @@ import (
 	"ocean/managedagent"
 )
 
+// main starts the interactive terminal client that forwards user input to a Desk agent and streams responses.
+//
+// It requires the ANTHROPIC_API_KEY environment variable and will exit if it is not set. The program initializes a desk
+// instance, prints its session ID, and optionally prints a pinned agent config version when ANTHROPIC_AGENT_VERSION is set
+// to an integer. It then reads lines from standard input (empty lines are ignored); the commands "quit", "exit", or "q"
+// terminate the program. For each input line it sends a chat request (targeting "terminal.user_input") with a 30-minute
+// timeout and prints streamed events: for "agent.message" events it prints the "content" payload (or the whole event if
+// absent); on "session.status_idle" it stops the stream. The program logs fatal errors for missing API key, desk
+// initialization failures, or stdin read errors.
 func main() {
 	apiKey := os.Getenv("ANTHROPIC_API_KEY")
 	if apiKey == "" {
