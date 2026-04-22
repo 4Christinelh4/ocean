@@ -77,12 +77,21 @@ export default function App() {
   }, []);
 
   const runAgent = useCallback(
-    async (component: WinId, text: string, append: (line: string) => void) => {
-      if (!text.trim() || busy) return;
+    async (
+      type: WinId,
+      command: string,
+      input: string,
+      append: (line: string) => void,
+      options?: { showPrompt?: boolean }
+    ) => {
+      const showPrompt = options?.showPrompt ?? true;
+      if (!input.trim() || busy) return;
       setBusy(true);
-      append(`\n> ${text}\n`);
+      if (showPrompt) {
+        append(`\n> [${command}] ${input}\n`);
+      }
       try {
-        await chatStream(component, text, (ev) => {
+        await chatStream(type, command, input, (ev) => {
           if (ev.type === "agent.message") {
             const line = formatAgentEvent(ev);
             if (line) append(line + "\n");
@@ -95,6 +104,37 @@ export default function App() {
       }
     },
     [busy]
+  );
+
+  const componentSwitchInput = useCallback(
+    (type: WinId) =>
+      JSON.stringify({
+        event: "component_selected",
+        component: type,
+        at: new Date().toISOString(),
+      }),
+    []
+  );
+
+  const onComponentSelect = useCallback(
+    (type: WinId) => {
+      const changed = focus !== type;
+      setOpen((o) => ({ ...o, [type]: true }));
+      bring(type);
+      if (!changed) return;
+
+      const append =
+        type === "terminal"
+          ? (line: string) => setTermLog((t) => [...t, line])
+          : type === "browser"
+            ? (line: string) => setBrowserLog((b) => [...b, line])
+            : (line: string) => setTrashLog((t) => [...t, line]);
+
+      void runAgent(type, "component.switch", componentSwitchInput(type), append, {
+        showPrompt: false,
+      });
+    },
+    [bring, componentSwitchInput, focus, runAgent]
   );
 
   const clock = useClock();
@@ -126,14 +166,14 @@ export default function App() {
               icon=">_"
               z={zMap.terminal}
               focused={focus === "terminal"}
-              onFocus={() => bring("terminal")}
+              onFocus={() => onComponentSelect("terminal")}
               onClose={() => setOpen((o) => ({ ...o, terminal: false }))}
             >
               <TerminalBody
                 lines={termLog}
                 disabled={busy}
                 onSubmit={(line) =>
-                  runAgent("terminal", line, (l) => setTermLog((t) => [...t, l]))
+                  runAgent("terminal", "terminal.user_input", line, (l) => setTermLog((t) => [...t, l]))
                 }
               />
             </Window>
@@ -145,7 +185,7 @@ export default function App() {
               icon="◉"
               z={zMap.browser}
               focused={focus === "browser"}
-              onFocus={() => bring("browser")}
+              onFocus={() => onComponentSelect("browser")}
               onClose={() => setOpen((o) => ({ ...o, browser: false }))}
             >
               <BrowserBody
@@ -154,6 +194,7 @@ export default function App() {
                 onGo={(url, note) =>
                   runAgent(
                     "browser",
+                    "browser.navigate_or_ask",
                     JSON.stringify({ url, note }),
                     (l) => setBrowserLog((b) => [...b, l])
                   )
@@ -168,14 +209,14 @@ export default function App() {
               icon="🗑"
               z={zMap.trash}
               focused={focus === "trash"}
-              onFocus={() => bring("trash")}
+              onFocus={() => onComponentSelect("trash")}
               onClose={() => setOpen((o) => ({ ...o, trash: false }))}
             >
               <TrashBody
                 lines={trashLog}
                 disabled={busy}
                 onAsk={(q) =>
-                  runAgent("trash", q, (l) => setTrashLog((t) => [...t, l]))
+                  runAgent("trash", "trash.inspect_or_recover", q, (l) => setTrashLog((t) => [...t, l]))
                 }
               />
             </Window>
@@ -187,30 +228,21 @@ export default function App() {
         <DockBtn
           label="Terminal"
           active={open.terminal && focus === "terminal"}
-          onClick={() => {
-            setOpen((o) => ({ ...o, terminal: true }));
-            bring("terminal");
-          }}
+          onClick={() => onComponentSelect("terminal")}
         >
           <span className="dock__ico dock__ico--term">{">_"}</span>
         </DockBtn>
         <DockBtn
           label="Browser"
           active={open.browser && focus === "browser"}
-          onClick={() => {
-            setOpen((o) => ({ ...o, browser: true }));
-            bring("browser");
-          }}
+          onClick={() => onComponentSelect("browser")}
         >
           <span className="dock__ico">◉</span>
         </DockBtn>
         <DockBtn
           label="Trash"
           active={open.trash && focus === "trash"}
-          onClick={() => {
-            setOpen((o) => ({ ...o, trash: true }));
-            bring("trash");
-          }}
+          onClick={() => onComponentSelect("trash")}
         >
           <span className="dock__ico">🗑</span>
         </DockBtn>

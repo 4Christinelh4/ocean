@@ -62,18 +62,19 @@ func main() {
 			return
 		}
 		var body struct {
-			Type  string `json:"type"`
-			Input string `json:"input"`
+			Type    string `json:"type"`
+			Command string `json:"command"`
+			Input   string `json:"input"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 			http.Error(w, "bad json", http.StatusBadRequest)
 			return
 		}
-		if body.Type == "" || body.Input == "" {
-			http.Error(w, "type and input required", http.StatusBadRequest)
+		if body.Type == "" || body.Command == "" || body.Input == "" {
+			http.Error(w, "type, command and input required", http.StatusBadRequest)
 			return
 		}
-		log.Printf("chat in type=%s len=%d remote=%s", body.Type, len(body.Input), r.RemoteAddr)
+		log.Printf("chat in type=%s command=%s len=%d remote=%s", body.Type, body.Command, len(body.Input), r.RemoteAddr)
 
 		ctx, cancel := context.WithTimeout(r.Context(), 30*time.Minute)
 		defer cancel()
@@ -117,7 +118,7 @@ func main() {
 			return nil
 		}
 
-		err = d.Chat(ctx, body.Type, body.Input, func(ev managedagent.StreamEvent) error {
+		err = d.Chat(ctx, body.Type, body.Command, body.Input, func(ev managedagent.StreamEvent) error {
 			typ, err := ev.Type()
 			if err != nil {
 				return err
@@ -131,10 +132,10 @@ func main() {
 			return nil
 		})
 		if err != nil {
-			log.Printf("chat failed type=%s: %v", body.Type, err)
+			log.Printf("chat failed type=%s command=%s: %v", body.Type, body.Command, err)
 			return
 		}
-		log.Printf("chat done type=%s", body.Type)
+		log.Printf("chat done type=%s command=%s", body.Type, body.Command)
 		_, _ = w.Write([]byte("data: {\"type\":\"ocean.done\"}\n\n"))
 		flusher.Flush()
 	})
