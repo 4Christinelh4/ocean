@@ -53,7 +53,7 @@ func main() {
 		}
 
 		roundCtx, cancel := context.WithTimeout(ctx, 30*time.Minute)
-		err := d.Chat(roundCtx, "terminal", line, func(ev managedagent.StreamEvent) error {
+		err := d.Chat(roundCtx, "terminal", "terminal.user_input", line, func(ev managedagent.StreamEvent) error {
 			typ, err := ev.Type()
 			if err != nil {
 				return err

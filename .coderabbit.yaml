@@ -7,14 +7,24 @@ reviews:
   poem: false
   review_status: true
   collapse_walkthrough: false
+  # Semantic-review preference: prioritize intent/behavior correctness over style-only comments.
+  # Keep feedback focused on potential regressions, API contract mismatches, and cross-layer consistency.
+  instructions: |
+    Prioritize semantic correctness over stylistic nits.
+    Focus on:
+      1) behavior changes and user-visible regressions,
+      2) API contract consistency across frontend -> backend -> agent payloads,
+      3) security and data validation issues,
+      4) maintainability risks (tight coupling, hidden side effects, unclear command semantics).
+    De-prioritize purely cosmetic suggestions unless they affect readability significantly.
   auto_review:
     enabled: true
     drafts: false
     base_branches:
       - "main"
 
-path_filters:
-  - "!web/node_modules/**"
-  - "!web/dist/**"
-  - "!.git/**"
+# path_filters:
+#   - "!web/node_modules/**"
+#   - "!web/dist/**"
+#   - "!.git/**"
 

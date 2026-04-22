@@ -20,13 +20,14 @@ export async function initSession(): Promise<{ sessionId: string }> {
 /** POST /api/chat — response is SSE: each `data: ` line is JSON (Anthropic event or `{type:ocean.done}`). */
 export async function chatStream(
   type: string,
+  command: string,
   input: string,
   onEvent: (ev: StreamEvent) => void
 ): Promise<void> {
   const res = await fetch(apiURL("/api/chat"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ type, input }),
+    body: JSON.stringify({ type, command, input }),
   });
   if (!res.ok || !res.body) {
     throw new Error(await res.text());

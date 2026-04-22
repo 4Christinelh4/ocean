@@ -66,15 +66,16 @@ func (d *Desk) SessionID() string { return d.sessionID }
 
 func (d *Desk) Client() *managedagent.Client { return d.client }
 
-// Chat sends a user message tagged with type and streams Anthropic session events to onEvent.
+// Chat sends a user message tagged with type/command and streams Anthropic session events to onEvent.
 // One round at a time (mutex).
-func (d *Desk) Chat(ctx context.Context, typ, userInput string, onEvent func(managedagent.StreamEvent) error) error {
+func (d *Desk) Chat(ctx context.Context, typ, command, userInput string, onEvent func(managedagent.StreamEvent) error) error {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
 	payload, err := json.Marshal(map[string]string{
-		"type":  typ,
-		"input": userInput,
+		"type":    typ,
+		"command": command,
+		"input":   userInput,
 	})
 	if err != nil {
 		return err
@@ -99,8 +100,9 @@ func ensureAgent(ctx context.Context, client *managedagent.Client) (string, erro
 		Name:  "Ocean OS Agent",
 		Model: "claude-sonnet-4-6",
 		System: "You are the system intelligence behind a Linux-style desktop (terminal, browser, trash). " +
-			"The user sends JSON with fields type and input. " +
-			"Answer helpfully; when the type is terminal, assume shell-style questions; " +
+			"The user sends JSON with fields type, command, and input. " +
+			"Use command as the primary intent classifier, then use type as UI context. " +
+			"When the type is terminal, assume shell-style questions; " +
 			"for browser, URLs and page intent; for trash, file recovery or cleanup advice. " +
 			"Be concise.",
 		Tools: []any{
