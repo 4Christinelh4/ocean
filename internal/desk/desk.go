@@ -92,6 +92,9 @@ func (d *Desk) Chat(ctx context.Context, typ, command, userInput string, onEvent
 	return d.client.StreamSessionEvents(ctx, d.sessionID, onEvent)
 }
 
+// ensureAgent returns the agent ID specified by the ANTHROPIC_AGENT_ID environment
+// variable if present; otherwise it creates a new agent with a default configuration
+// and returns the created agent's ID. It returns an error if agent creation fails.
 func ensureAgent(ctx context.Context, client *managedagent.Client) (string, error) {
 	if id := strings.TrimSpace(os.Getenv("ANTHROPIC_AGENT_ID")); id != "" {
 		return id, nil
